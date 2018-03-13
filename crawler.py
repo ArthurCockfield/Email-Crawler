@@ -4,45 +4,67 @@
 
 import requests, bs4, time
 def collect_URLS(search=None) : 
-    search_string = input("What would you like to collect data for?")
-    # Open Google Web page
-    res = requests.get('http://www.google.com/search?q='+search_string)
-
-    # html = bs4.BeautifulSoup(res)
-    text = bs4.BeautifulSoup(res.text)
-
-    print(text)
-
-    soup = bs4.BeautifulSoup(res.text)
-
-    all_links = soup.find_all('a', href=True)
-
-    only_results = []
-
-    for i  in all_links :
-        if '/url?q' in i['href'] and 'settings/' not in i['href'] and 'webcache' not in i['href'] :
-            only_results.append(i['href'].replace('/url?q=',''))
-    print(type(all_links))
+    """Collects URLS from Google based on a search input
+    ARGS: Search term (in case someone wants to put input outside function)
+    Returns: list of websites """
+    search_string = "kingston restaurants"
+    for i in range(10) :
+        if i >= 0 :
+            # Open Google Web page
+            URL = 'http://www.google.com/search?q='+search_string+"&start="+str(i*10)
+            
+            res = requests.get(URL)
+            
+            # html = bs4.BeautifulSoup(res)
+        
+            #print(text)
+        
+            soup = bs4.BeautifulSoup(res.text,"lxml")
+            
+            all_links = soup.find_all('a', href=True)
+            print(all_links)
+            only_results = []
+        
+            for i  in all_links :
+                if '/url?q' in i['href'] and 'settings/' not in i['href'] and 'webcache' not in i['href'] :
+                    only_results.append(i['href'].replace('/url?q=',''))
     print(only_results)
-    print(set(only_results))
-    print("the length is", len(only_results))
-    print("the new length is", len(set(only_results)))
-
-    for i in only_results :
-        pass
+    return only_results
+#    print(type(all_links))
+#    print(only_results)
+#    print(set(only_results))
+#    print("the length is", len(only_results))
+#    print("the new length is", len(set(only_results)))
+#
+#    for i in only_results :
+#        pass
 # error handling
 def collect_email(URL) :
     res = requests.get(URL)
-    text = bs4.BeautifulSoup(res.text)
-    print(text)
-    for i in range(len(text)) :
-        if text[i] == '@' :
-            strip = text[i:].split(' ',1)[0]
-            return strip
+    text = bs4.BeautifulSoup(res.text,"lxml")
+    text = str(text)
+    text = text.split(" ")
+    all_emails = []
+    for i in range(len(text)-1) :
+        if '@' in text[i] and "." in text[i] and len(text[i])<20:
+            strip = text[i]
+            all_emails.append(strip)
+    return all_emails
+def data_clean(email_list) :
+    """ Cleans all emails"
+    arg: email data
+    return: email data without common errors like quotations
+    removes emails that are images"""
+    pass
+           
+
             #email = strip[
-URL = 'https://stackoverflow.com/questions/22767509/python-get-the-x-first-words-in-a-string'
+URL = 'https://www.benchmarkemail.com/help-FAQ/answer/How-do-I-add-a-link-in-my-email-to-a-Webpage-Email-address-Anchor-or-Survey'
 # collect_URLS(search=None) 
-print(collect_email(URL))
+Google_Links = collect_URLS()
+for i in Google_Links :
+    print(collect_email(i))
+
 
 # collect all URLS associated with webpage
 # Try to pull email from webpage
