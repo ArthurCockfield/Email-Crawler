@@ -3,6 +3,8 @@
 # web scraping https://automatetheboringstuff.com/chapter11/
 
 import requests, bs4, time
+import re # for finding the URL using the package I pulled
+import numpy as np
 
 search_string = "kingston restaurants"
 
@@ -12,46 +14,56 @@ def open_google(page=0) :
     res = requests.get(URL)
     return res
 
-def collect_URLS(URL=None, google_search = False) : 
+def Collect_Links(URL=None) : 
+    """Collects URLS from chosen web page based on passed URL
+    ARGS: URL that person wants to input(in case someone wants to put input outside function)
+    Returns: list of websites """
+
+ 
+    res = requests.get(URL)
+    # html = bs4.BeautifulSoup(res)
+
+    #print(text)
+
+    soup = bs4.BeautifulSoup(res.text,"lxml")
+    # Turn this into set to remove duplicates
+##    only_links = re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', str(soup))
+##    print(len(only_links))
+    # Re is being commented out temporarily. The reason for doing so is to test out beautiful soup's parser
+    only_links = []
+    souptest = soup.find_all('a')
+    for i in souptest :
+        only_links.append(i['href'])
+    print(len(only_links))
+
+                
+            
+    return only_links
+
+def collect_google(URL=None, google_search = False) : 
     """Collects URLS from Google based on a search input
     ARGS: Search term (in case someone wants to put input outside function)
     Returns: list of websites """
-    
-    only_results = []
-    for i in range(4) :
-        if google_search == True :
-            time.sleep(30)
-        else :
-            pass
+    all_links = ""
+#    only_links = []
+    for i in range(50) :
+        time.sleep(10)
         if i > 0 :
             
             # Open Google Web page
-            if google_search == True :
-                res = open_google(page=i)
-            else : 
-                res = requests.get(URL)
-            # html = bs4.BeautifulSoup(res)
+            res = open_google(page=i)
         
-            #print(text)
-        
+            
+          
             soup = bs4.BeautifulSoup(res.text,"lxml")
+            # All Links collects all information stored in this class. Could be useful later when I am trying to collect more than just the URL
+            one_page = soup.find_all('h3', class_="r")
+            all_links = all_links + str(one_page)
+
+    only_links = re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', all_links)
             
-            all_links = soup.find_all('h3', class_="r")
-            for i in all_links :
-                
-                print(i)
-            
-            
-##            for i  in all_links :
-##                if 'settings/' not in i['href'] and 'webcache' not in i['href'] and 'accounts.google' not in i['href'] :
-##                ## Many cases where the link starts with https or just //www. Strips all that for simplicity
-##                    i['href'] = i['href'].lstrip('//')
-##                    if  '/url?q' in i['href'] :
-##                        only_results.append(i['href'].replace('/url?q=',''))
-##                    else :
-##                        only_results.append(i['href'])
-##    print(only_results)
-    return all_links
+
+    return only_links
 
 
 # error handling
@@ -62,7 +74,7 @@ def collect_email(URL) :
     text = text.split(" ")
     all_emails = []
     for i in range(len(text)-1) :
-        if '@' in text[i] and "." in text[i] and len(text[i])<20 :
+        if '@' in text[i] and "." in text[i] and len(text[i]) <20 :
             strip = text[i]
 
             all_emails.append(strip)
@@ -78,31 +90,39 @@ def data_clean(email_list) :
     pass
            
 
-            #email = strip[
-# collect_URLS(search=None) 
-Google_Links = collect_URLS(google_search= True)
+
+Google_Links = collect_google()
 print(Google_Links)
 print(len(Google_Links))
-##email_collection = []
-##for i in Google_Links :
-##   try:
-##       website_links = collect_URLS(URL=i)
-##       print("The websites collected for this restaurant is, ", website_links)
-##            # website_links pulls all the URLS it finds from its home page.
-##       for j in website_links :
-##            try: 
-##                time.sleep(2)
-##                print("The Link being checked is: ", j)
-##                temp_email = collect_email(j)
-##                print(temp_email)
-##                if temp_email != None :
-##                    email_collection.append(collect_email(j))
-##            except Exception as e :
-##                print("Error in collecting emails. Here is the error: ", e)
-##   except Exception as e :
-##        print("Error with collecting collect the 2nd level of links", e)
-##print(email_collection)
-
+email_collection = []
+for i in Google_Links :
+    #Add email collection on home page logic
+   try:
+    # Try to collect email on home page
+        home_email = collect_email(i)
+        if home_email != None :
+            email_collection.append(home_email)
+            continue
+        website_links = Collect_Links(URL=i)
+        print("The websites being collected for ",i," is", website_links)
+            # website_links pulls all the URLS it finds from its home page.
+        for j in website_links :
+            try: 
+                time.sleep(2)
+                print("The Link being checked is: ", j)
+                temp_email = collect_email(j)
+                print(temp_email)
+                if temp_email != None :
+                    email_collection.append(temp_email)
+            except Exception as e :
+                print("Error in collecting emails. Here is the error: ", e)
+   except Exception as e :
+        print("Error with collecting collect the 2nd level of links", e)
+print(email_collection)
+try : 
+    np.savetxt("file_name.csv", email_collection, delimiter=",", fmt='%s', header=header)
+except Exception as e :
+    print(e)
 # collect all URLS associated with webpage
 # Try to pull email from webpage
 # pull title of webpage
